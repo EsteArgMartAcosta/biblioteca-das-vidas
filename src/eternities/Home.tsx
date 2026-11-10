@@ -1,29 +1,437 @@
-import {useState} from 'react';
-import type {Progress,Action} from '../narrative/types';
-import {homeStories} from '../narrative/catalog';
-import {canDrawer} from '../narrative/engine';
-import {Icon} from '../components/Icon';
-import {Modal} from '../components/Modal';
-import {realMemories} from '../config/personal';
-const revelation=['Você procurou nosso amor em outros séculos.','Em outras estrelas.','Em outros mundos.','Mas existe uma vida que eu gostaria de lhe mostrar.','Nela, não somos heróis.','Não salvamos o universo. Não descobrimos nenhum segredo.','Apenas acordamos juntos.','E, de alguma forma, isso é tudo.'];
-const objects=[{id:'domingo',name:'Duas xícaras',room:'cozinha',x:44,y:72,icon:'cup'},{id:'insomnia',name:'A luz da cozinha',room:'cozinha',x:8,y:57,icon:'moon'},{id:'mesa',name:'Um lugar para você',room:'cozinha',x:58,y:73,icon:'sun'},{id:'dificil',name:'O casaco na porta',room:'sala',x:45,y:49,icon:'home'},{id:'conversa',name:'Um calendário',room:'sala',x:39,y:47,icon:'clock'},{id:'mudanca',name:'Um livro anotado',room:'biblioteca',x:25,y:44,icon:'book'},{id:'tarde',name:'A janela entreaberta',room:'biblioteca',x:62,y:40,icon:'image'},{id:'velhinhos',name:'A cadeira junto ao jardim',room:'varanda',x:84,y:72,icon:'leaf'}];
-export function HomeScene({p,seen,markSeen,open,dispatch,go}:{p:Progress;seen:boolean;markSeen:()=>void;open:(id:string)=>void;dispatch:(a:Action)=>void;go:(s:string)=>void}){
- const [step,setStep]=useState(0),[room,setRoom]=useState('cozinha'),[letter,setLetter]=useState(false),[common,setCommon]=useState(false),[drawerHint,setDrawerHint]=useState(false),[pair,setPair]=useState('');
- const count=homeStories.filter(s=>p.completed[s.id]).length;
- if(!seen)return <div className="home-revelation"><img src="./assets/house.svg" alt="Uma casa iluminada numa tarde de chuva"/><div className="revelation-text" key={step}><p className="eyebrow">A SALA DAS PEQUENAS ETERNIDADES</p><h1>{revelation[step]}</h1><button className="text-link" onClick={()=>step<revelation.length-1?setStep(step+1):markSeen()}>{step<revelation.length-1?'Continuar':'Abrir a porta'}<Icon name="next"/></button></div><button className="quiet intro-skip" onClick={markSeen}>Entrar na casa</button></div>;
- return <main className={'home-scene room-'+room+' wall-'+(p.flags['mudanca.parede']??'original')}><div className="world-image"><img src="./assets/house.svg" alt="Casa de madeira com mesa para dois, janela chuvosa e uma pequena biblioteca"/><div className="house-light"/><div className="rain" aria-hidden="true"/></div>
- <div className="home-heading"><p className="eyebrow">UMA CASA POSSÍVEL · {count} / 8 DIAS</p><h1>Pequenas<br/><em>Eternidades</em></h1><p>O lugar onde nada extraordinário aconteceu.</p></div>
- <nav className="room-nav" aria-label="Ambientes da casa">{[['cozinha','Cozinha'],['sala','Sala de estar'],['biblioteca','Pequena biblioteca'],['varanda','Varanda']].map(([id,name])=><button key={id} className={room===id?'active':''} aria-pressed={room===id} onClick={()=>setRoom(id)}>{name}</button>)}</nav>
- <div className="hotspot-layer">{objects.filter(o=>o.room===room).map(o=><button key={o.id} style={{left:o.x+'%',top:o.y+'%'}} className={'hotspot home-spot '+(p.completed[o.id]?'finished':'')} onClick={()=>open(o.id)}><span className="hotspot-orbit"><Icon name={o.icon}/></span><span className="hotspot-name">{o.name}{p.completed[o.id]?' · revisitar':''}</span></button>)}
- {p.flags['velhinhos.jardim']&&<span className="house-change plant-change" style={{left:'78%',top:'54%'}}><Icon name="leaf"/><small>{p.flags['velhinhos.jardim']==='flor'?'O primeiro botão se abriu.':'As ervas encontraram a luz.'}</small></span>}
- {p.flags['mesa.objeto']&&<span className="table-object" style={{left:'51%',top:'69%'}}><Icon name={{flor:'leaf',livro:'book',xicara:'cup',vela:'sun'}[p.flags['mesa.objeto']]??'book'} size={28}/></span>}
- {room==='sala'&&<button className="hotspot drawer-spot" style={{left:'51%',top:'83%'}} onClick={()=>p.drawer?setLetter(true):setDrawerHint(true)}><span className="hotspot-orbit"><Icon name="key"/></span><span className="hotspot-name">{p.drawer?'A carta na gaveta':'Uma gaveta fechada'}</span></button>}
- </div>
- {p.completed.tempo&&<div className="clock-tick" aria-label="O relógio voltou a andar"><span/></div>}<div className="house-journal"><span className="eyebrow">A CASA GUARDA SEUS GESTOS</span><p>{p.flags['mudanca.parede']?`Uma parede ${p.flags['mudanca.parede']==='verde'?'verde':'cor de barro'}. `:''}{p.flags['tarde.foto']?'Uma fotografia ficcional na estante. ':''}{p.flags['conversa.acordo']?'Um acordo que os dois podem revisar. ':''}{count===0?'Toque nos objetos para conhecer os dias que poderiam morar aqui.':`${count} pequenos dias já deixaram marcas.`}</p>{p.flags['tarde.foto']&&<span className="mini-photo"><Icon name="image"/> {p.flags['tarde.foto']==='janela'?'Chuva na janela':'A cadeira ao sol'} · fotografia ficcional</span>}
- {count===8&&<button className="text-link" onClick={()=>{dispatch({type:'common'});setCommon(true);}}>Abrir o Livro dos Dias Comuns <Icon name="book"/></button>}{p.common&&<button className="text-link" onClick={()=>go('final')}>Há uma mesa esperando no átrio <Icon name="next"/></button>}</div>
- {realMemories.filter(m=>m.authorized).map(m=><details className="real-memory" key={m.id}><summary>{m.title} · memória real</summary><p>{m.text}</p>{m.image&&<img src={m.image} alt={m.title}/>}</details>)}
- {drawerHint&&<Modal close={()=>setDrawerHint(false)} label="A gaveta fechada"><section className="paper-note"><button className="close" aria-label="Fechar gaveta" onClick={()=>setDrawerHint(false)}><Icon name="close"/></button><p className="eyebrow">DENTRO DA MADEIRA, UMA INSCRIÇÃO</p><h2>Uma chegada.<br/>Um pouco de tempo.</h2><p>Que objetos da biblioteca aprenderam a esperar junto com esta casa?</p><label>Colocar junto à gaveta<select value={pair} onChange={e=>setPair(e.target.value)}><option value="">Escolha dois objetos</option><option value="luz">A esfera e a fotografia</option><option value="casa">A bússola e o relógio</option><option value="jardim">A semente e o bilhete</option></select></label>{pair==='casa'&&canDrawer(p)?<button className="primary" onClick={()=>{dispatch({type:'drawer'});setDrawerHint(false);setLetter(true);}}>Girar a pequena chave <Icon name="key"/></button>:<p className="hint">{pair&&pair!=='casa'?'Esses objetos conversam entre si, mas a inscrição fala de direção e de tempo.':!canDrawer(p)?'Conheça a cozinha de madrugada e a varanda dos anos futuros. No atlas, reconheça o bilhete da bússola e o futuro do relógio.':'A agulha aprendeu a chegar. Os ponteiros aprenderam a continuar.'}</p>}</section></Modal>}
- {letter&&<Modal close={()=>setLetter(false)} label="A carta da gaveta"><article className="paper-note letter"><button className="close" aria-label="Guardar a carta" onClick={()=>setLetter(false)}><Icon name="close"/></button><p className="eyebrow">UMA CARTA SEM DATA</p><h2>Se esta casa acontecer</h2><p>Você chegou até esta gaveta carregando coisas que não caberiam em nossa mudança. Uma estrela, por exemplo. Espero que tenha encontrado um bom lugar para ela.</p><p>Eu escondi aqui algo menor. A vontade de deixar uma luz acesa quando você demorar. De conhecer o nome das pessoas que tornaram seu dia melhor. De aprender quando oferecer uma ideia e quando apenas pôr água para ferver.</p><p>Talvez nossa casa nunca tenha esta janela. Talvez mudemos de cidade, de trabalho, de opinião sobre a cor da parede. Gostaria que você pudesse mudar de ideia sem recear perder o seu lugar.</p><p>Se algum dia o mundo ficar grande demais, podemos começar pela pia. Uma lava; o outro seca. Depois veremos o que fazer com o resto.</p><p>Não preparei uma vida pronta para você entrar. Deixei espaço para a vida que você também quiser trazer.</p><p><em>A chave pode ficar dos dois lados da porta.</em></p></article></Modal>}
- {common&&<Modal close={()=>setCommon(false)} label="O Livro dos Dias Comuns"><article className="paper-note common-book"><button className="close" aria-label="Fechar o Livro dos Dias Comuns" onClick={()=>setCommon(false)}><Icon name="close"/></button><p className="eyebrow">O LIVRO DOS DIAS COMUNS</p><h2>O que coube<br/>numa casa.</h2><p>“Há pessoas que passariam a eternidade procurando um amor extraordinário.”</p><p>“Eu passaria uma eternidade descobrindo a beleza dos dias comuns ao seu lado.”</p><span className="small-rule"/><p>O infinito não estava nas vidas que poderíamos ter vivido. Estava em tudo aquilo que ainda podemos viver juntos.</p><button className="text-link" onClick={()=>go('final')}>Voltar à mesa do átrio <Icon name="next"/></button></article></Modal>}
- </main>;
+import { useState } from "react";
+import type { Progress, Action } from "../narrative/types";
+import { homeStories } from "../narrative/catalog";
+import { canDrawer } from "../narrative/engine";
+import { Icon } from "../components/Icon";
+import { Modal } from "../components/Modal";
+import { additionalContent, realMemories } from "../config/personal";
+const revelation = [
+  "Você procurou nosso amor em outros séculos.",
+  "Em outras estrelas.",
+  "Em outros mundos.",
+  "Mas existe uma vida que eu gostaria de lhe mostrar.",
+  "Nela, não somos heróis.",
+  "Não salvamos o universo. Não descobrimos nenhum segredo.",
+  "Apenas acordamos juntos.",
+  "E, de alguma forma, isso é tudo.",
+];
+const objects = [
+  {
+    id: "domingo",
+    name: "Duas xícaras",
+    room: "cozinha",
+    x: 44,
+    y: 72,
+    icon: "cup",
+  },
+  {
+    id: "insomnia",
+    name: "A luz da cozinha",
+    room: "cozinha",
+    x: 8,
+    y: 57,
+    icon: "moon",
+  },
+  {
+    id: "mesa",
+    name: "Um lugar para você",
+    room: "cozinha",
+    x: 58,
+    y: 73,
+    icon: "sun",
+  },
+  {
+    id: "dificil",
+    name: "O casaco na porta",
+    room: "sala",
+    x: 45,
+    y: 49,
+    icon: "home",
+  },
+  {
+    id: "conversa",
+    name: "Um calendário",
+    room: "sala",
+    x: 39,
+    y: 47,
+    icon: "clock",
+  },
+  {
+    id: "mudanca",
+    name: "Um livro anotado",
+    room: "biblioteca",
+    x: 25,
+    y: 44,
+    icon: "book",
+  },
+  {
+    id: "tarde",
+    name: "A janela entreaberta",
+    room: "biblioteca",
+    x: 62,
+    y: 40,
+    icon: "image",
+  },
+  {
+    id: "velhinhos",
+    name: "A cadeira junto ao jardim",
+    room: "varanda",
+    x: 84,
+    y: 72,
+    icon: "leaf",
+  },
+];
+export function HomeScene({
+  p,
+  seen,
+  markSeen,
+  open,
+  dispatch,
+  go,
+}: {
+  p: Progress;
+  seen: boolean;
+  markSeen: () => void;
+  open: (id: string) => void;
+  dispatch: (a: Action) => void;
+  go: (s: string) => void;
+}) {
+  const [step, setStep] = useState(0),
+    [room, setRoom] = useState("cozinha"),
+    [letter, setLetter] = useState(false),
+    [common, setCommon] = useState(false),
+    [drawerHint, setDrawerHint] = useState(false),
+    [pair, setPair] = useState("");
+  const count = homeStories.filter((s) => p.completed[s.id]).length;
+  if (!seen)
+    return (
+      <div className="home-revelation">
+        <img
+          src="./assets/house.svg"
+          alt="Uma casa iluminada numa tarde de chuva"
+        />
+        <div className="revelation-text" key={step}>
+          <p className="eyebrow">A SALA DAS PEQUENAS ETERNIDADES</p>
+          <h1>{revelation[step]}</h1>
+          <button
+            className="text-link"
+            onClick={() =>
+              step < revelation.length - 1 ? setStep(step + 1) : markSeen()
+            }
+          >
+            {step < revelation.length - 1 ? "Continuar" : "Abrir a porta"}
+            <Icon name="next" />
+          </button>
+        </div>
+        <button className="quiet intro-skip" onClick={markSeen}>
+          Entrar na casa
+        </button>
+      </div>
+    );
+  return (
+    <main
+      className={
+        "home-scene room-" +
+        room +
+        " wall-" +
+        (p.flags["mudanca.parede"] ?? "original")
+      }
+    >
+      <div className="world-image">
+        <img
+          src="./assets/house.svg"
+          alt="Casa de madeira com mesa para dois, janela chuvosa e uma pequena biblioteca"
+        />
+        <div className="house-light" />
+        <div className="rain" aria-hidden="true" />
+      </div>
+      <div className="home-heading">
+        <p className="eyebrow">UMA CASA POSSÍVEL · {count} / 8 DIAS</p>
+        <h1>
+          Pequenas
+          <br />
+          <em>Eternidades</em>
+        </h1>
+        <p>O lugar onde nada extraordinário aconteceu.</p>
+      </div>
+      <nav className="room-nav" aria-label="Ambientes da casa">
+        {[
+          ["cozinha", "Cozinha"],
+          ["sala", "Sala de estar"],
+          ["biblioteca", "Pequena biblioteca"],
+          ["varanda", "Varanda"],
+        ].map(([id, name]) => (
+          <button
+            key={id}
+            className={room === id ? "active" : ""}
+            aria-pressed={room === id}
+            onClick={() => setRoom(id)}
+          >
+            {name}
+          </button>
+        ))}
+      </nav>
+      <div className="hotspot-layer">
+        {objects
+          .filter((o) => o.room === room)
+          .map((o) => (
+            <button
+              key={o.id}
+              style={{ left: o.x + "%", top: o.y + "%" }}
+              className={
+                "hotspot home-spot " + (p.completed[o.id] ? "finished" : "")
+              }
+              onClick={() => open(o.id)}
+            >
+              <span className="hotspot-orbit">
+                <Icon name={o.icon} />
+              </span>
+              <span className="hotspot-name">
+                {o.name}
+                {p.completed[o.id] ? " · revisitar" : ""}
+              </span>
+            </button>
+          ))}
+        {p.flags["velhinhos.jardim"] && (
+          <span
+            className="house-change plant-change"
+            style={{ left: "78%", top: "54%" }}
+          >
+            <Icon name="leaf" />
+            <small>
+              {p.flags["velhinhos.jardim"] === "flor"
+                ? "O primeiro botão se abriu."
+                : "As ervas encontraram a luz."}
+            </small>
+          </span>
+        )}
+        {p.flags["mesa.objeto"] && (
+          <span className="table-object" style={{ left: "51%", top: "69%" }}>
+            <Icon
+              name={
+                { flor: "leaf", livro: "book", xicara: "cup", vela: "sun" }[
+                  p.flags["mesa.objeto"]
+                ] ?? "book"
+              }
+              size={28}
+            />
+          </span>
+        )}
+        {room === "sala" && (
+          <button
+            className="hotspot drawer-spot"
+            style={{ left: "51%", top: "83%" }}
+            onClick={() => (p.drawer ? setLetter(true) : setDrawerHint(true))}
+          >
+            <span className="hotspot-orbit">
+              <Icon name="key" />
+            </span>
+            <span className="hotspot-name">
+              {p.drawer ? "A carta na gaveta" : "Uma gaveta fechada"}
+            </span>
+          </button>
+        )}
+      </div>
+      {p.completed.tempo && (
+        <div className="clock-tick" aria-label="O relógio voltou a andar">
+          <span />
+        </div>
+      )}
+      <div className="house-journal">
+        <span className="eyebrow">A CASA GUARDA SEUS GESTOS</span>
+        <p>
+          {p.flags["mudanca.parede"]
+            ? `Uma parede ${p.flags["mudanca.parede"] === "verde" ? "verde" : "cor de barro"}. `
+            : ""}
+          {p.flags["tarde.foto"] ? "Uma fotografia ficcional na estante. " : ""}
+          {p.flags["conversa.acordo"]
+            ? "Um acordo que os dois podem revisar. "
+            : ""}
+          {count === 0
+            ? "Toque nos objetos para conhecer os dias que poderiam morar aqui."
+            : `${count} pequenos dias já deixaram marcas.`}
+        </p>
+        {p.flags["tarde.foto"] && (
+          <span className="mini-photo">
+            <Icon name="image" />{" "}
+            {p.flags["tarde.foto"] === "janela"
+              ? "Chuva na janela"
+              : "A cadeira ao sol"}{" "}
+            · fotografia ficcional
+          </span>
+        )}
+        {count === 8 && (
+          <button
+            className="text-link"
+            onClick={() => {
+              dispatch({ type: "common" });
+              setCommon(true);
+            }}
+          >
+            Abrir o Livro dos Dias Comuns <Icon name="book" />
+          </button>
+        )}
+        {p.common && (
+          <button className="text-link" onClick={() => go("final")}>
+            Há uma mesa esperando no átrio <Icon name="next" />
+          </button>
+        )}
+      </div>
+      {(additionalContent.length > 0 ||
+        realMemories.some((m) => m.authorized)) && (
+        <section className="home-additions" aria-labelledby="other-days-title">
+          <p className="eyebrow">A CASA CONTINUA</p>
+          <h2 id="other-days-title">Outros dias</h2>
+          {additionalContent.map((story) => (
+            <button
+              className="text-link"
+              key={story.id}
+              onClick={() => open(story.id)}
+            >
+              <Icon name="book" /> {story.title} · possibilidade ficcional
+            </button>
+          ))}
+          {realMemories
+            .filter((m) => m.authorized)
+            .map((m) => (
+              <details className="real-memory" key={m.id}>
+                <summary>{m.title} · memória real</summary>
+                <p>{m.text}</p>
+                {m.image && <img src={m.image} alt={m.title} />}
+              </details>
+            ))}
+        </section>
+      )}
+      {drawerHint && (
+        <Modal close={() => setDrawerHint(false)} label="A gaveta fechada">
+          <section className="paper-note">
+            <button
+              className="close"
+              aria-label="Fechar gaveta"
+              onClick={() => setDrawerHint(false)}
+            >
+              <Icon name="close" />
+            </button>
+            <p className="eyebrow">DENTRO DA MADEIRA, UMA INSCRIÇÃO</p>
+            <h2>
+              Uma chegada.
+              <br />
+              Um pouco de tempo.
+            </h2>
+            <p>
+              Que objetos da biblioteca aprenderam a esperar junto com esta
+              casa?
+            </p>
+            <label>
+              Colocar junto à gaveta
+              <select value={pair} onChange={(e) => setPair(e.target.value)}>
+                <option value="">Escolha dois objetos</option>
+                <option value="luz">A esfera e a fotografia</option>
+                <option value="casa">A bússola e o relógio</option>
+                <option value="jardim">A semente e o bilhete</option>
+              </select>
+            </label>
+            {pair === "casa" && canDrawer(p) ? (
+              <button
+                className="primary"
+                onClick={() => {
+                  dispatch({ type: "drawer" });
+                  setDrawerHint(false);
+                  setLetter(true);
+                }}
+              >
+                Girar a pequena chave <Icon name="key" />
+              </button>
+            ) : (
+              <p className="hint">
+                {pair && pair !== "casa"
+                  ? "Esses objetos conversam entre si, mas a inscrição fala de direção e de tempo."
+                  : !canDrawer(p)
+                    ? "Conheça a cozinha de madrugada e a varanda dos anos futuros. No atlas, reconheça o bilhete da bússola e o futuro do relógio."
+                    : "A agulha aprendeu a chegar. Os ponteiros aprenderam a continuar."}
+              </p>
+            )}
+          </section>
+        </Modal>
+      )}
+      {letter && (
+        <Modal close={() => setLetter(false)} label="A carta da gaveta">
+          <article className="paper-note letter">
+            <button
+              className="close"
+              aria-label="Guardar a carta"
+              onClick={() => setLetter(false)}
+            >
+              <Icon name="close" />
+            </button>
+            <p className="eyebrow">UMA CARTA SEM DATA</p>
+            <h2>Se esta casa acontecer</h2>
+            <p>
+              Você chegou até esta gaveta carregando coisas que não caberiam em
+              nossa mudança. Uma estrela, por exemplo. Espero que tenha
+              encontrado um bom lugar para ela.
+            </p>
+            <p>
+              Eu escondi aqui algo menor. A vontade de deixar uma luz acesa
+              quando você demorar. De conhecer o nome das pessoas que tornaram
+              seu dia melhor. De aprender quando oferecer uma ideia e quando
+              apenas pôr água para ferver.
+            </p>
+            <p>
+              Talvez nossa casa nunca tenha esta janela. Talvez mudemos de
+              cidade, de trabalho, de opinião sobre a cor da parede. Gostaria
+              que você pudesse mudar de ideia sem recear perder o seu lugar.
+            </p>
+            <p>
+              Se algum dia o mundo ficar grande demais, podemos começar pela
+              pia. Uma lava; o outro seca. Depois veremos o que fazer com o
+              resto.
+            </p>
+            <p>
+              Não preparei uma vida pronta para você entrar. Deixei espaço para
+              a vida que você também quiser trazer.
+            </p>
+            <p>
+              <em>A chave pode ficar dos dois lados da porta.</em>
+            </p>
+          </article>
+        </Modal>
+      )}
+      {common && (
+        <Modal close={() => setCommon(false)} label="O Livro dos Dias Comuns">
+          <article className="paper-note common-book">
+            <button
+              className="close"
+              aria-label="Fechar o Livro dos Dias Comuns"
+              onClick={() => setCommon(false)}
+            >
+              <Icon name="close" />
+            </button>
+            <p className="eyebrow">O LIVRO DOS DIAS COMUNS</p>
+            <h2>
+              O que coube
+              <br />
+              numa casa.
+            </h2>
+            <p>
+              “Há pessoas que passariam a eternidade procurando um amor
+              extraordinário.”
+            </p>
+            <p>
+              “Eu passaria uma eternidade descobrindo a beleza dos dias comuns
+              ao seu lado.”
+            </p>
+            <span className="small-rule" />
+            <p>
+              O infinito não estava nas vidas que poderíamos ter vivido. Estava
+              em tudo aquilo que ainda podemos viver juntos.
+            </p>
+            <button className="text-link" onClick={() => go("final")}>
+              Voltar à mesa do átrio <Icon name="next" />
+            </button>
+          </article>
+        </Modal>
+      )}
+    </main>
+  );
 }

@@ -1,9 +1,200 @@
-import {useEffect,useRef,useState} from 'react';
-import type {Save} from '../narrative/types';
-import {decode,download} from '../state/persistence';
-import {Icon} from './Icon';
-export default function Settings({save,patch,replace,close,warning,allowSaving}:{save:Save;patch:(s:Partial<Save>)=>void;replace:(s:Save|null)=>void;close:()=>void;warning:string;allowSaving:()=>void}){
- const dialog=useRef<HTMLDialogElement>(null);const [error,setError]=useState(''),[candidate,setCandidate]=useState<Save|null>(null),[reset,setReset]=useState(false);
- useEffect(()=>{const d=dialog.current;d?.showModal();return()=>d?.close();},[]);
- return <dialog className="settings-dialog" ref={dialog} onCancel={close}><button className="close" aria-label="Fechar preferências" onClick={close}><Icon name="close"/></button><p className="eyebrow">LEIA NO SEU RITMO</p><h2>Sua visita.</h2><label className="setting-line"><span>Movimento reduzido<small>Desativa transições, chuva e partículas.</small></span><input type="checkbox" checked={save.settings.reduced} onChange={e=>patch({settings:{...save.settings,reduced:e.target.checked}})}/></label><label className="setting-line"><span>Tamanho do texto</span><select value={save.settings.textSize} onChange={e=>patch({settings:{...save.settings,textSize:Number(e.target.value)}})}><option value="1">Confortável</option><option value="1.15">Maior</option><option value="1.3">Amplo</option></select></label><label className="volume-setting">Volume do ambiente<input type="range" min="0" max="1" step=".05" value={save.settings.volume} onChange={e=>patch({settings:{...save.settings,volume:Number(e.target.value)}})}/></label><p className="hint">O áudio começa apenas quando você toca em “Ativar som”. Nenhum enigma depende dele.</p><hr/><h3>Uma cópia da jornada</h3><p className="hint">O progresso fica neste navegador. Para trocar de aparelho, exporte e importe o arquivo.</p><div className="settings-actions"><button className="outline" onClick={()=>download(JSON.stringify(save,null,2),'biblioteca-jornada.json')}><Icon name="download"/> Exportar</button><label className="outline file-input"><Icon name="upload"/> Importar<input aria-label="Importar jornada" type="file" accept=".json,application/json" onChange={async e=>{try{const f=e.target.files?.[0];if(!f)return;const s=decode(await f.text());setCandidate(s);setError('');}catch(err){setError(err instanceof Error?err.message:'Não foi possível importar o arquivo.');}e.target.value='';}}/></label></div>{candidate&&<div className="confirmation"><p>Esta cópia contém {candidate.events.length} registros. Importar substitui a jornada desta aba. Você pode exportar a atual antes.</p><button className="primary" onClick={()=>{replace(candidate);setCandidate(null);close();}}>Substituir pela cópia</button><button className="quiet" onClick={()=>setCandidate(null)}>Cancelar</button></div>}{error&&<p role="alert" className="warning">{error}</p>}{warning&&<div className="warning"><p>{warning}</p><button className="outline" onClick={allowSaving}>Permitir salvar esta jornada no lugar da anterior</button></div>}<hr/><button className="text-link" onClick={()=>{patch({introSeen:false});close();}}>Rever a abertura <Icon name="restart"/></button><button className="text-link" onClick={()=>setReset(true)}>Iniciar outra jornada <Icon name="next"/></button>{reset&&<div className="confirmation"><p>Começar de novo substitui o progresso deste navegador. Exporte uma cópia se quiser conservar suas escolhas.</p><button className="primary" onClick={()=>{replace(null);close();}}>Confirmar nova jornada</button><button className="quiet" onClick={()=>setReset(false)}>Manter minha jornada</button></div>}<p className="privacy-note">Sem contas, anúncios, rastreamento ou envio de suas palavras. As vidas e a casa são ficção. Imagens reais só serão adicionadas com autorização.</p></dialog>;
+import { useEffect, useRef, useState } from "react";
+import type { Save } from "../narrative/types";
+import { decode, download } from "../state/persistence";
+import { Icon } from "./Icon";
+export default function Settings({
+  save,
+  patch,
+  replace,
+  close,
+  warning,
+  allowSaving,
+}: {
+  save: Save;
+  patch: (s: Partial<Save>) => void;
+  replace: (s: Save | null) => void;
+  close: () => void;
+  warning: string;
+  allowSaving: () => void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [error, setError] = useState(""),
+    [candidate, setCandidate] = useState<Save | null>(null),
+    [reset, setReset] = useState(false);
+  useEffect(() => {
+    const d = dialog.current;
+    d?.showModal();
+    return () => d?.close();
+  }, []);
+  return (
+    <dialog className="settings-dialog" ref={dialog} onCancel={close}>
+      <button
+        className="close"
+        aria-label="Fechar preferências"
+        onClick={close}
+      >
+        <Icon name="close" />
+      </button>
+      <p className="eyebrow">LEIA NO SEU RITMO</p>
+      <h2>Sua visita.</h2>
+      <label className="setting-line">
+        <span>
+          Movimento reduzido
+          <small>Desativa transições, chuva e partículas.</small>
+        </span>
+        <input
+          type="checkbox"
+          checked={save.settings.reduced}
+          onChange={(e) =>
+            patch({ settings: { ...save.settings, reduced: e.target.checked } })
+          }
+        />
+      </label>
+      <label className="setting-line">
+        <span>Tamanho do texto</span>
+        <select
+          value={save.settings.textSize}
+          onChange={(e) =>
+            patch({
+              settings: { ...save.settings, textSize: Number(e.target.value) },
+            })
+          }
+        >
+          <option value="1">Confortável</option>
+          <option value="1.15">Maior</option>
+          <option value="1.3">Amplo</option>
+        </select>
+      </label>
+      <label className="volume-setting">
+        Volume do ambiente
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step=".05"
+          value={save.settings.volume}
+          onChange={(e) =>
+            patch({
+              settings: { ...save.settings, volume: Number(e.target.value) },
+            })
+          }
+        />
+      </label>
+      <p className="hint">
+        O áudio começa apenas quando você toca em “Ativar som”. Nenhum enigma
+        depende dele.
+      </p>
+      <hr />
+      <h3>Uma cópia da jornada</h3>
+      <p className="hint">
+        O progresso fica neste navegador. Para trocar de aparelho, exporte e
+        importe o arquivo.
+      </p>
+      <div className="settings-actions">
+        <button
+          className="outline"
+          onClick={() =>
+            download(JSON.stringify(save, null, 2), "biblioteca-jornada.json")
+          }
+        >
+          <Icon name="download" /> Exportar
+        </button>
+        <label className="outline file-input">
+          <Icon name="upload" /> Importar
+          <input
+            aria-label="Importar jornada"
+            type="file"
+            accept=".json,application/json"
+            onChange={async (e) => {
+              try {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                const s = decode(await f.text());
+                setCandidate(s);
+                setError("");
+              } catch (err) {
+                setError(
+                  err instanceof Error
+                    ? err.message
+                    : "Não foi possível importar o arquivo.",
+                );
+              }
+              e.target.value = "";
+            }}
+          />
+        </label>
+      </div>
+      {candidate && (
+        <div className="confirmation">
+          <p>
+            Esta cópia contém {candidate.events.length} registros. Importar
+            substitui a jornada desta aba. Você pode exportar a atual antes.
+          </p>
+          <button
+            className="primary"
+            onClick={() => {
+              replace(candidate);
+              setCandidate(null);
+              close();
+            }}
+          >
+            Substituir pela cópia
+          </button>
+          <button className="quiet" onClick={() => setCandidate(null)}>
+            Cancelar
+          </button>
+        </div>
+      )}
+      {error && (
+        <p role="alert" className="warning">
+          {error}
+        </p>
+      )}
+      {warning && (
+        <div className="warning">
+          <p>{warning}</p>
+          <button className="outline" onClick={allowSaving}>
+            Permitir salvar esta jornada no lugar da anterior
+          </button>
+        </div>
+      )}
+      <hr />
+      <button
+        className="text-link"
+        onClick={() => {
+          patch({ introSeen: false });
+          close();
+        }}
+      >
+        Rever a abertura <Icon name="restart" />
+      </button>
+      <button className="text-link" onClick={() => setReset(true)}>
+        Iniciar outra jornada <Icon name="next" />
+      </button>
+      {reset && (
+        <div className="confirmation">
+          <p>
+            Começar de novo substitui o progresso deste navegador. Exporte uma
+            cópia se quiser conservar suas escolhas.
+          </p>
+          <button
+            className="primary"
+            onClick={() => {
+              replace(null);
+              close();
+            }}
+          >
+            Confirmar nova jornada
+          </button>
+          <button className="quiet" onClick={() => setReset(false)}>
+            Manter minha jornada
+          </button>
+        </div>
+      )}
+      <p className="privacy-note">
+        Sem contas, anúncios, rastreamento ou envio de suas palavras. As vidas e
+        a casa são ficção. Imagens reais só serão adicionadas com autorização.
+      </p>
+    </dialog>
+  );
 }
